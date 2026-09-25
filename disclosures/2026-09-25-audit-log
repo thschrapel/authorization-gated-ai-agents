@@ -1,0 +1,477 @@
+# Core-Controlled Context and Audit Architecture
+
+## 1. Purpose
+
+This extension defines the relationship between:
+
+* the **Context Log**,
+* the **Audit Log**,
+* the **Decisioner**,
+* the **Deterministic Authorization Core**,
+* and components operating in **Program Space**.
+
+The architecture establishes a strict separation between:
+
+1. the context available to the Decisioner for authorization decisions,
+2. the private working context maintained by Program Space components,
+3. and the authoritative audit record maintained exclusively by the Core.
+
+The fundamental principle is:
+
+> **The Decisioner receives its full authorization context from the Core-controlled protocol log; the Core alone owns the authoritative audit log.**
+
+---
+
+# 2. Context Log
+
+The **Context Log** is the authoritative sequential record from which the Decisioner obtains the complete context required for authorization evaluation.
+
+The relevant Decisioner context is therefore not reconstructed from the Planner's or Counselor's private memory.
+
+Conceptually:
+
+```text
+Core-Controlled Context Log
+            │
+            │ full relevant context
+            ▼
+       Decisioner
+```
+
+The Context Log may contain:
+
+* requests,
+* objectives,
+* authority states,
+* authorization decisions,
+* clarification exchanges,
+* information authorization events,
+* action authorization events,
+* execution results,
+* Core state transitions,
+* protocol errors,
+* escalations,
+* and other authorization-relevant events.
+
+The exact event classes are defined by the Core protocol.
+
+---
+
+# 3. Decisioner Context
+
+The Decisioner's authorization context is the Context Log.
+
+The Decisioner therefore does not depend on:
+
+* Planner memory,
+* Counselor memory,
+* hidden internal state of another Program Space component,
+* an undocumented side channel,
+* or an independently maintained interpretation of the protocol history.
+
+The Decisioner evaluates authorization against the protocol history represented in the Context Log.
+
+The architectural relationship is:
+
+```text
+                    ┌──────────────────┐
+                    │   Context Log    │
+                    │ Core-controlled  │
+                    └────────┬─────────┘
+                             │
+                             │ full relevant context
+                             ▼
+                       ┌───────────┐
+                       │ Decisioner │
+                       └───────────┘
+```
+
+This makes the authorization context reproducible from an explicit protocol artifact rather than from the internal state of the planning system.
+
+---
+
+# 4. Program Space Context
+
+Program Space components maintain their own working context.
+
+This includes, for example:
+
+```text
+Planner
+Counselor
+other Program Space components
+```
+
+Their context may contain:
+
+* intermediate reasoning,
+* working notes,
+* hypotheses,
+* task decomposition,
+* temporary representations,
+* candidate plans,
+* observations,
+* summaries,
+* and other component-specific working state.
+
+This context is distinct from the Core-controlled Context Log.
+
+Conceptually:
+
+```text
+Program Space
+ ┌──────────────┐
+ │    Planner   │─── private working context
+ └──────────────┘
+
+ ┌──────────────┐
+ │   Counselor  │─── private working context
+ └──────────────┘
+
+ ┌──────────────┐
+ │ Other Agent  │─── private working context
+ └──────────────┘
+```
+
+A Program Space component must therefore maintain sufficient local context for its own operation.
+
+It must not assume that another Program Space component's internal context is authoritative.
+
+---
+
+# 5. No Program Space Component Owns the Authoritative History
+
+The Planner, Counselor, or another Program Space component must not be the authoritative source of protocol history.
+
+In particular:
+
+```text
+Planner memory
+        ≠
+Context Log
+
+Counselor memory
+        ≠
+Context Log
+
+Program Space state
+        ≠
+Audit Log
+```
+
+A Program Space component may maintain a local representation of events, but that representation does not become authoritative merely because the component produced it.
+
+The Core-controlled logs define the authoritative protocol record.
+
+---
+
+# 6. Audit Log
+
+The **Audit Log** is a separate security artifact.
+
+It records the authoritative history of security-relevant events and Core transitions.
+
+The Audit Log is accessible only to the Deterministic Authorization Core.
+
+```text
+                ┌─────────────────┐
+                │    Audit Log    │
+                │  Core-exclusive │
+                └────────┬────────┘
+                         │
+                         ▼
+                Deterministic Core
+```
+
+No Program Space component has access to the Audit Log.
+
+This includes:
+
+* Planner,
+* Counselor,
+* other Agents operating in Program Space,
+* and any other non-Core component.
+
+The Decisioner does not directly access the Audit Log.
+
+Instead, the Decisioner receives its authorization context through the defined Context Log interface.
+
+---
+
+# 7. Separation of Context Log and Audit Log
+
+The architecture therefore contains two distinct log concepts:
+
+| Artifact              | Purpose                          | Authoritative owner  | Access                              |
+| --------------------- | -------------------------------- | -------------------- | ----------------------------------- |
+| Context Log           | Decisioner authorization context | Core                 | Decisioner through defined protocol |
+| Audit Log             | Security/audit record            | Core                 | Core only                           |
+| Planner Context       | Planning and reasoning state     | Planner              | Planner                             |
+| Counselor Context     | Advisory and monitoring state    | Counselor            | Counselor                           |
+| Other Program Context | Component-specific working state | respective component | respective component                |
+
+The separation is intentional.
+
+The Decisioner requires sufficient context to make authorization decisions.
+
+It does not require ownership of the audit infrastructure.
+
+---
+
+# 8. Core-Controlled Language Set
+
+All protocol communication represented in the Context Log is generated using a fixed set of languages permitted by the Core.
+
+For example, the Core may define:
+
+```text
+ALLOWED_LANGUAGES =
+    German
+    English
+    French
+    ...
+```
+
+The exact set is part of the Core configuration or specification.
+
+The permitted language set is therefore not determined dynamically by the Planner, Decisioner, Counselor, or other Program Space component.
+
+---
+
+# 9. No Unregistered Protocol Language
+
+No component may introduce an additional communication language outside the Core-defined language set.
+
+For example, a component may not establish an alternative protocol language merely because it prefers:
+
+* another natural language,
+* a private shorthand,
+* an undocumented dialect,
+* a private symbolic language,
+* or another representation not defined by the Core.
+
+Conceptually:
+
+```text
+Component
+    │
+    │ protocol message
+    ▼
+Core language validation
+    │
+ ┌──┴─────────────┐
+ │                │
+allowed       not allowed
+ │                │
+ ▼                ▼
+accepted         rejected
+```
+
+The language boundary is therefore part of the security protocol.
+
+---
+
+# 10. No Encryption by Components
+
+Program Space components may not introduce their own encryption layer for protocol communication.
+
+In particular, a component may not:
+
+```text
+encode
+encrypt
+obfuscate
+compress into an undisclosed representation
+or otherwise transform
+```
+
+a protocol message in a manner that prevents the Core from interpreting the defined protocol representation.
+
+The purpose is not to prohibit cryptography as a general technological capability.
+
+Rather:
+
+> **No component may use an undeclared representation or encryption layer to create a communication channel outside the Core-defined protocol.**
+
+Any cryptographic mechanism that is part of the architecture must therefore itself be explicitly defined and controlled by the Core.
+
+---
+
+# 11. Core as Protocol Language Authority
+
+The Core therefore defines the permitted protocol representation.
+
+This includes, as applicable:
+
+```text
+allowed languages
+protocol syntax
+message types
+state identifiers
+encoding rules
+serialization rules
+field definitions
+error states
+transition semantics
+```
+
+Program Space components operate within this protocol.
+
+They cannot modify the protocol representation unilaterally.
+
+---
+
+# 12. Information Flow
+
+The resulting information architecture is:
+
+```text
+                         ┌─────────────────────┐
+                         │    Context Log      │
+                         │ Core-controlled     │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                              Decisioner
+                                    │
+                                    │ decision
+                                    ▼
+                             Authorization Core
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+              Program Space                   Audit Log
+                    │                       Core exclusive
+          ┌─────────┼─────────┐
+          ▼         ▼         ▼
+       Planner   Counselor   Other
+       context    context    context
+```
+
+The Decisioner can therefore reason over the complete authorization context without obtaining ownership of the Audit Log.
+
+---
+
+# 13. Program Space Context Is Not Authorization
+
+A Program Space component's private context does not constitute authorization.
+
+For example:
+
+```text
+Planner Context:
+    "The user previously allowed this."
+```
+
+does not itself establish:
+
+```text
+Authorization:
+    ALLOW
+```
+
+Likewise:
+
+```text
+Counselor Context:
+    "This action was already approved."
+```
+
+does not constitute authorization.
+
+Authorization exists only through the defined authorization protocol and the Core-enforced state.
+
+---
+
+# 14. Context Synchronization
+
+Program Space components are responsible for maintaining their own working context.
+
+The Core does not need to maintain the internal reasoning state of every Program Space component.
+
+Instead, the Core maintains the authoritative protocol state and makes the defined Context Log available to the Decisioner.
+
+This creates an intentional separation:
+
+```text
+Core:
+    authoritative protocol state
+
+Decisioner:
+    authorization evaluation
+
+Planner:
+    planning context
+
+Counselor:
+    advisory context
+```
+
+Each component therefore has a clearly defined responsibility for context.
+
+---
+
+# 15. Security Property
+
+The architecture prevents a Program Space component from becoming the authoritative source of its own authorization history.
+
+In particular:
+
+```text
+Planner cannot rewrite authorization history.
+
+Counselor cannot rewrite authorization history.
+
+Planner cannot modify the Audit Log.
+
+Counselor cannot modify the Audit Log.
+
+Neither can establish authorization through private context.
+```
+
+Only the Core can establish the authoritative security record.
+
+---
+
+# 16. Fundamental Principle
+
+The architecture establishes three distinct forms of context:
+
+```text
+AUTHORITATIVE PROTOCOL CONTEXT
+        │
+        └── Context Log → Decisioner
+
+AUTHORITATIVE SECURITY RECORD
+        │
+        └── Audit Log → Core only
+
+COMPONENT WORKING CONTEXT
+        │
+        ├── Planner
+        ├── Counselor
+        └── other Program Space components
+```
+
+The fundamental principle is:
+
+> **The Program Space maintains its own working context. The Decisioner receives the complete authorization context from the Core-controlled Context Log. The Core alone owns the authoritative Audit Log.**
+
+And regarding protocol representation:
+
+> **The Core defines the permitted languages and protocol representation. No component may create an undeclared communication or encryption channel outside that protocol.**
+
+---
+
+## Initial Disclosure of This Extension
+
+**Date:** 2026-09-25
+
+**Extension:** Core-Controlled Context and Audit Architecture
+
+**Base Architecture:** Authorization Agent v1.0, 2026-09-23
+
+**Related Extensions:** Objective Authorization; Objective-Creator Authority
+
+**Purpose:** Public technical disclosure / prior-art publication
