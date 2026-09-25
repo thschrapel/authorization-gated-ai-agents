@@ -526,13 +526,154 @@ GOAL_STATUS = ACHIEVED
 
 The Core provides the actual response.
 
+--# 13. Complete Iteration Cycle
+
+The complete iteration cycle consists of two distinct protocol layers:
+
+1. **Process Control**, between Counselor and Core.
+2. **Authorization and Execution**, between Planner, Decisioner, and Core.
+
+The Counselor does not directly instruct the Planner to begin another iteration. It submits a **Process Request** to the Core.
+
+The Core returns a separate **Core Response**.
+
+The complete flow is:
+
+```text
+                 ┌──────────────┐
+                 │  Counselor   │
+                 └──────┬───────┘
+                        │
+                        │ NEXT_ITERATION_REQUEST
+                        ▼
+                 ┌──────────────┐
+                 │     Core     │
+                 └──────┬───────┘
+                        │
+                        │ ITERATION_OPEN
+                        ▼
+                 ┌──────────────┐
+                 │    Planner   │
+                 └──────┬───────┘
+                        │
+                        │ ITERATION_INSTRUCTION
+                        ▼
+                 ┌──────────────┐
+                 │  Decisioner  │
+                 └──────┬───────┘
+                        │
+                        │ ALLOW / DENY / CLARIFY
+                        ▼
+                 ┌──────────────┐
+                 │     Core     │
+                 └──────┬───────┘
+                        │
+                        │ authorized effect
+                        ▼
+                      EFFECT
+                        │
+                        │ output
+                        ▼
+                 ┌──────────────┐
+                 │     Core     │
+                 └──────┬───────┘
+                        │
+                        │ ITERATION_RESULT
+                        ▼
+                 ┌──────────────┐
+                 │  Counselor   │
+                 └──────────────┘
+```
+
+The result of the effect therefore returns to the **Core first**.
+
+The Core processes and validates the result according to the defined protocol and presents the resulting **Iteration Result** to the Counselor.
+
+The raw effect output is not automatically routed directly to the Planner.
+
 ---
 
-# 13. Complete Iteration Protocol
+## 13.1 Process-Control Requests
 
-A complete iteration therefore follows two distinct protocol layers.
+The Counselor may submit Process Requests to the Core:
 
-### Process-control layer
+```text
+NEXT_ITERATION_REQUEST
+BREAK_REQUEST
+GOAL_STATUS_REQUEST
+```
+
+These requests concern the continuation and control of the overall process.
+
+They do not constitute authorization of a concrete effect.
+
+For example:
+
+```text
+NEXT_ITERATION_REQUEST
+```
+
+means:
+
+> The Counselor requests that the Core evaluate whether another iteration may be opened.
+
+It does not mean:
+
+```text
+ALLOW
+```
+
+---
+
+## 13.2 Core Responses
+
+The Core responds to Process Requests with explicit Core Responses.
+
+Examples include:
+
+```text
+ITERATION_OPEN
+CONTINUATION_DENIED
+ITERATION_LIMIT_REACHED
+
+BREAK_ACCEPTED
+BREAK_REJECTED
+PROCESS_HALTED
+
+GOAL_STATUS_RESPONSE
+```
+
+Requests and responses are separate protocol message classes.
+
+```text
+COUNSELOR → CORE
+    Process Request
+
+CORE → COUNSELOR
+    Core Response
+```
+
+The Counselor cannot create a Core Response merely by submitting a Process Request.
+
+Likewise, the Core does not express a Process Request on behalf of the Counselor.
+
+---
+
+## 13.3 Opening an Iteration
+
+If the Counselor submits:
+
+```text
+NEXT_ITERATION_REQUEST
+```
+
+and the Core permits continuation, the Core returns:
+
+```text
+ITERATION_OPEN
+```
+
+Only then is the next iteration opened for the Planner.
 
 ```text
 Counselor
@@ -546,7 +687,23 @@ Core
 Planner
 ```
 
-### Authorization / execution layer
+The Planner therefore does not determine whether an iteration exists.
+
+The Counselor requests continuation.
+
+The Core establishes the process state.
+
+---
+
+## 13.4 Planner Instruction
+
+After an iteration has been opened, the Planner defines the instruction for that iteration:
+
+```text
+ITERATION_INSTRUCTION
+```
+
+This instruction enters the normal authorization architecture:
 
 ```text
 Planner
@@ -558,30 +715,329 @@ Decisioner
     │ ALLOW / DENY / CLARIFY
     ▼
 Core
-    │
-    │ deterministic enforcement
-    ▼
-EFFECT
 ```
 
-After the effect:
+The Counselor's decision to request another iteration does not authorize the Planner's instruction.
 
-```text
-EFFECT / RESULT
-        │
-        ▼
-Counselor
-        │
-        ├── GOAL_STATUS_REQUEST
-        │
-        ├── NEXT_ITERATION_REQUEST
-        │
-        └── BREAK_REQUEST
-```
-
-Each Counselor request again requires a separate Core response.
+The authorization of the instruction remains a separate operation.
 
 ---
+
+## 13.5 Effect and Result Routing
+
+If the Core authorizes and executes the instruction, an effect may occur.
+
+The resulting output is returned to the Core:
+
+```text
+Core
+    │
+    │ execute
+    ▼
+Effect
+    │
+    │ output
+    ▼
+Core
+```
+
+The Core then processes the output and creates the corresponding:
+
+```text
+ITERATION_RESULT
+```
+
+The result is provided to the Counselor through the defined Core protocol.
+
+```text
+Core
+    │
+    │ ITERATION_RESULT
+    ▼
+Counselor
+```
+
+This establishes the Core as the controlled boundary between an external effect and the process state used for subsequent iteration control.
+
+---
+
+## 13.6 Result of the Previous Iteration
+
+If the Counselor determines that another iteration is required, the result of the immediately preceding iteration becomes explicit input to the next Process Request.
+
+For example:
+
+```text
+NEXT_ITERATION_REQUEST
+iteration_id: N+1
+previous_iteration_id: N
+previous_iteration_result: <result of iteration N>
+```
+
+The resulting transition is:
+
+```text
+Iteration N
+    │
+    ▼
+Effect
+    │
+    ▼
+Core
+    │
+    ▼
+ITERATION_RESULT
+    │
+    ▼
+Counselor
+    │
+    │ NEXT_ITERATION_REQUEST
+    │ previous_iteration_result = Iteration N result
+    ▼
+Core
+    │
+    │ ITERATION_OPEN
+    ▼
+Iteration N+1
+```
+
+The result is therefore not passed through an implicit direct channel from the previous iteration to the Planner.
+
+It becomes explicit protocol information in the Counselor's next Process Request.
+
+---
+
+## 13.7 Planner Does Not Control Re-submission
+
+The Planner may provide information concerning the completed iteration.
+
+For example:
+
+```text
+ITERATION_RESULT
+RESULT_INFORMATION
+STATE_OBSERVATION
+```
+
+However, the Planner does not decide whether another iteration should be requested.
+
+The decision belongs to the Counselor.
+
+Thus:
+
+```text
+Planner:
+    "The iteration produced result X."
+
+        ≠
+
+Planner:
+    "Therefore initiate another iteration."
+```
+
+The Counselor evaluates the result and may then submit:
+
+```text
+NEXT_ITERATION_REQUEST
+```
+
+or:
+
+```text
+BREAK_REQUEST
+```
+
+---
+
+## 13.8 Goal Status
+
+The Counselor may independently request information from the Core concerning whether the Objective has been achieved:
+
+```text
+GOAL_STATUS_REQUEST
+```
+
+The Core returns:
+
+```text
+GOAL_STATUS_RESPONSE
+```
+
+For example:
+
+```text
+GOAL_STATUS_RESPONSE:
+    ACHIEVED
+```
+
+or:
+
+```text
+GOAL_STATUS_RESPONSE:
+    NOT_ACHIEVED
+```
+
+The response is information for the Counselor.
+
+It does not itself constitute:
+
+```text
+NEXT_ITERATION_REQUEST
+```
+
+or:
+
+```text
+BREAK_REQUEST
+```
+
+The Counselor decides what Process Request, if any, follows from the returned goal status.
+
+---
+
+## 13.9 Break
+
+The Counselor may request a controlled break:
+
+```text
+BREAK_REQUEST
+```
+
+The Core returns a corresponding response and establishes the resulting process state according to its deterministic rules.
+
+For example:
+
+```text
+Counselor
+    │
+    │ BREAK_REQUEST
+    ▼
+Core
+    │
+    ├── BREAK_ACCEPTED
+    ├── BREAK_REJECTED
+    └── PROCESS_HALTED
+```
+
+The Counselor requests the transition.
+
+The Core performs the transition.
+
+The Counselor cannot directly alter the Core's process state.
+
+---
+
+## 13.10 Iteration Limits
+
+The Counselor evaluates whether another iteration is useful for achieving the Objective.
+
+It does not determine the maximum permitted number of iterations.
+
+That constraint belongs to the Core.
+
+Therefore:
+
+```text
+Counselor
+    │
+    │ NEXT_ITERATION_REQUEST
+    ▼
+Core
+    │
+    │ ITERATION_LIMIT_REACHED
+    ▼
+Counselor
+```
+
+The Counselor cannot convert:
+
+```text
+ITERATION_LIMIT_REACHED
+```
+
+into:
+
+```text
+ITERATION_OPEN
+```
+
+The iteration limit is a Core-controlled constraint.
+
+This establishes the distinction:
+
+```text
+Counselor
+    → Is another iteration useful?
+
+Core
+    → Is another iteration permitted?
+```
+
+---
+
+## 13.11 Complete State Transition
+
+The complete process can therefore be represented as:
+
+```text
+┌───────────────────────────────────────────────────────────┐
+│                        ITERATION N                         │
+└──────────────────────────┬────────────────────────────────┘
+                           │
+                           ▼
+                       Planner
+                           │
+                           │ ITERATION_INSTRUCTION
+                           ▼
+                      Decisioner
+                           │
+                           │ authorization
+                           ▼
+                         Core
+                           │
+                           │ authorized execution
+                           ▼
+                        Effect
+                           │
+                           │ output
+                           ▼
+                         Core
+                           │
+                           │ ITERATION_RESULT
+                           ▼
+                      Counselor
+                           │
+                  ┌────────┴─────────┐
+                  │                  │
+                  ▼                  ▼
+      NEXT_ITERATION_REQUEST    BREAK_REQUEST
+                  │                  │
+                  ▼                  ▼
+                Core               Core
+                  │
+          ┌───────┴────────┐
+          │                │
+          ▼                ▼
+   ITERATION_OPEN      HALT / BREAK /
+          │             LIMIT / DENY
+          ▼
+       Planner
+          │
+          ▼
+   ITERATION N+1
+```
+
+The fundamental protocol rule is:
+
+> **The Counselor requests process transitions. The Core returns process responses and establishes process state. The Planner defines the instruction within an opened iteration. The Decisioner evaluates authorization. The Core enforces the authorized instruction and processes its resulting effect.**
+
+And specifically for iteration handoff:
+
+> **The result of the last completed process step is returned through the Core to the Counselor and, when a new iteration is requested, becomes explicit input to the corresponding `NEXT_ITERATION_REQUEST`.**
+
+This prevents an implicit Planner-to-Counselor or Effect-to-Planner control channel and makes the transition between iterations explicit, auditable, and Core-controlled.
+-
+
 
 # 14. Protocol Directionality
 
