@@ -526,7 +526,7 @@ GOAL_STATUS = ACHIEVED
 
 The Core provides the actual response.
 
---# 13. Complete Iteration Cycle
+# 13. Complete Iteration Cycle
 
 The complete iteration cycle consists of two distinct protocol layers:
 
