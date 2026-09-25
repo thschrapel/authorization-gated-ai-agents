@@ -1,10 +1,10 @@
 # Security-Core Addendum — External Security Counsel
 
-## 1. Security Counsel for Unresolved Authorization
+## 1. Security Counsel for Unresolved Security Questions
 
-The Security Core may encounter authorization requests for which the available decision context is insufficient to produce a sufficiently precise authorization decision.
+The Security Core may encounter requests for which the available decision context is insufficient to produce a sufficiently precise security assessment.
 
-This may occur not only because information is missing, but because the security significance of the available information is difficult to determine locally.
+This may occur because information is missing, because the security significance of available information is difficult to determine, or because an Objective or execution plan is sufficiently complex that additional security expertise is useful.
 
 In such cases, the Security Core may obtain advice from a separate **Security Counsel** operating at a higher-level security or policy instance.
 
@@ -30,24 +30,7 @@ The Security Counsel may assist the Security Core in analyzing such Objectives.
 
 Its task is not to redefine the Objective.
 
-Rather, it may identify security-relevant interpretations, missing conditions, or ambiguities that require clarification before authorization can be determined.
-
-Thus:
-
-```text
-Objective
-    ↓
-local security analysis
-    ↓
-if insufficient:
-    Security Counsel
-    ↓
-security interpretation
-    ↓
-precise Clarify request
-    ↓
-new authorization evaluation
-```
+Rather, it may identify security-relevant interpretations, missing conditions, or ambiguities that may require further clarification or security evaluation.
 
 ---
 
@@ -68,7 +51,7 @@ The Security Counsel may therefore analyze a proposed plan with respect to:
 * exceptional execution paths,
 * and other Core-defined security properties.
 
-The Security Counsel may identify aspects of a plan that require additional information before the Core can make a sufficiently precise authorization decision.
+The Security Counsel may identify aspects of a plan that require additional information before the Core can make a sufficiently precise security assessment.
 
 It does not thereby approve the plan.
 
@@ -78,7 +61,7 @@ It does not thereby approve the plan.
 
 Communication between the Security Core and the Security Counsel occurs through a Core-controlled secure channel.
 
-Only information necessary for resolving the security question should be transmitted.
+Only information necessary for the security question should be transmitted.
 
 Where possible, identifying or otherwise unnecessary information is removed, abstracted, or anonymized before transmission.
 
@@ -111,13 +94,12 @@ The Security Counsel may assist the Security Core by:
 
 * identifying security-relevant interpretations of an Objective,
 * identifying security-relevant properties of a complex execution plan,
-* identifying missing authorization conditions,
+* identifying missing security conditions,
 * distinguishing materially different interpretations,
-* identifying information required for a decision,
+* identifying information required for further evaluation,
 * recommending a more precise clarification,
-* recommending a security-oriented process break,
-* identifying whether further security escalation is appropriate,
-* or recommending that the request remain unresolved.
+* recommending interruption or further security review,
+* or recommending that the security question remain unresolved.
 
 The Security Counsel does not directly execute an operation.
 
@@ -125,57 +107,39 @@ It does not directly modify the authorization state of the protected platform.
 
 ---
 
-## 6. Security Recommendation to Break
+## 6. Security Advice and Process Decisions
 
-The Security Counsel may identify circumstances in which further execution should not proceed until a security question has been resolved.
+Security Counsel advice may concern whether continued processing or execution should proceed.
 
-It may therefore recommend a security break or suspension.
+For example, the Security Counsel may provide advice indicating:
 
-Such a recommendation is advisory.
+* that further information should be obtained,
+* that a security concern remains unresolved,
+* that further analysis is appropriate,
+* or that continuation should be reconsidered.
 
-The Core remains responsible for establishing the actual process state.
+Such advice may be particularly relevant where an Objective has potentially serious security implications or where a complex execution plan cannot be sufficiently evaluated from the local context.
 
-This creates a distinction between the two forms of Counsel:
-
-```text
-Counselor
-    → evaluates whether continued process effort is worthwhile
-
-Security Counsel
-    → evaluates whether continued execution is sufficiently
-      security-understood to proceed
-```
-
-Both may recommend termination or interruption, but for different reasons.
-
-The Counselor primarily optimizes the process.
-
-The Security Counsel primarily protects the security decision boundary.
+The Security Core may use such advice according to its own defined security architecture.
 
 ---
 
-## 7. More Precise Clarification
+## 7. Processing of Security Counsel Advice Is Not Defined Here
 
-The Security Counsel may contribute to a subsequent `CLARIFY` decision.
+This architecture does **not** define how an individual Security Core must process Security Counsel advice.
 
-Instead of issuing a broad clarification request such as:
+In particular, this document does not prescribe:
 
-```text
-CLARIFY:
-"Please provide more information."
-```
+* whether particular advice results in `ALLOW`, `DENY`, `CLARIFY`, `HOLD`, `BREAK`, or another state,
+* whether specific classes of Security Counsel advice are binding,
+* whether advice is advisory only,
+* how conflicting advice is resolved,
+* whether multiple Counsel instances may be consulted,
+* or which security policies determine the effect of Counsel advice.
 
-the Security Core may formulate a more specific request based on Security Counsel input:
+These semantics belong to the implementation and policy of the Security Core.
 
-```text
-CLARIFY:
-"Specify whether authorization includes operation X
-under condition Y for resource Z."
-```
-
-This can reduce unnecessary clarification cycles while preserving the principle that unresolved authorization is not permission.
-
-The exact protocol and lifecycle of such a `CLARIFY` cycle remain subject to further definition.
+The architectural requirement is only that the Security Counsel remains within the defined advisory interface and that the Core remains the authoritative enforcement boundary.
 
 ---
 
@@ -200,6 +164,8 @@ Security Counsel advice
         ≠
 Authorization
 ```
+
+How the Core incorporates the advice is deliberately left undefined by this architectural specification.
 
 ---
 
@@ -226,25 +192,11 @@ The purpose is to allow higher-level security expertise to be consulted without 
 
 Authority does not flow from the Security Counsel back through the communication channel.
 
-In particular:
+The existence of a secure channel does not itself establish authorization.
 
-```text
-Security Counsel advice
-        ↓
-Core evaluation
-        ↓
-explicit authorization state
-```
+The Security Counsel provides additional security intelligence.
 
-and never:
-
-```text
-Security Counsel advice
-        ↓
-implicit authorization
-```
-
-Likewise, the existence of a secure channel does not itself establish authorization.
+The Core determines the significance of that intelligence within its own defined security architecture.
 
 ---
 
@@ -255,16 +207,16 @@ Security Counsel provides a mechanism for the Security Core to obtain additional
 This permits a system to distinguish between:
 
 ```text
-UNKNOWN
-    ↓
+insufficient local security understanding
+        ↓
 additional security analysis
-    ↓
-precise clarification / security break / escalation
-    ↓
-new authorization evaluation
+        ↓
+Security Counsel advice
+        ↓
+Core-defined processing
 ```
 
-rather than treating uncertainty as permission.
+rather than treating the absence of sufficient local understanding as permission.
 
 The mechanism therefore extends the **decision-support capability** of the Security Core without extending the **authorization boundary**.
 
@@ -281,10 +233,11 @@ The Security Counsel may contribute to:
 * understanding the security implications of an Objective,
 * analyzing a complex execution plan,
 * identifying missing conditions,
-* recommending a security break,
-* or formulating a more precise Clarify request.
+* recommending further clarification,
+* or recommending interruption or additional security review.
 
-The decisive property remains:
+**How the Security Core acts upon that advice is intentionally not defined by this specification.**
 
-> **Additional intelligence may improve the quality of the authorization process without becoming an alternative authorization mechanism.**
+The decisive architectural property remains:
 
+> **Additional security intelligence may improve the quality of the authorization process without becoming an alternative authorization mechanism.**
