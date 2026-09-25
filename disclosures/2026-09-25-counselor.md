@@ -12,13 +12,11 @@
 
 The **Counselor** is the iterative control component of the Authorization Agent architecture.
 
-Its purpose is not to plan individual actions and not to authorize them.
+Its purpose is to determine whether the current process should:
 
-Its purpose is to determine whether the Agent's process should:
-
-* proceed to another iteration,
+* begin another iteration,
 * terminate,
-* or request a controlled break / escalation from the Core.
+* or request a controlled break from the Core.
 
 The Counselor therefore provides the architectural equivalent of an iterative:
 
@@ -28,200 +26,190 @@ FOR / NEXT
 
 control structure.
 
-The fundamental principle is:
+The Counselor does not define the concrete instruction executed within an iteration and does not authorize that instruction.
 
-> **The Planner defines the instruction for an iteration. The Core determines and enforces the authorized effect. The Counselor determines whether another iteration should be initiated.**
-
----
-
-# 2. Separation of Responsibilities
-
-The three components have distinct responsibilities:
+The fundamental separation is:
 
 ```text
 Counselor
-    → Should another iteration occur?
+    → requests a process transition
 
 Planner
-    → What should be attempted in this iteration?
+    → defines the instruction for an iteration
+
+Decisioner
+    → evaluates authorization
 
 Core
-    → Is the requested transition authorized,
-      and if so, what effect is produced?
+    → performs the deterministic transition and enforces authorization
 ```
-
-This separation prevents the iterative control mechanism from becoming an implicit authorization mechanism.
 
 ---
 
-# 3. Iterative Control Model
+# 2. Two Different Request Types
 
-The basic process can be represented as:
+The architecture distinguishes between **process-control requests** from the Counselor and **action requests** from the Planner.
 
-```text
-Counselor
-    │
-    │ NEXT
-    ▼
-Planner
-    │
-    │ iteration instruction
-    ▼
-Core
-    │
-    │ authorized effect
-    ▼
-System
-    │
-    │ resulting state / information
-    ▼
-Counselor
-    │
-    ├── NEXT ─────► new iteration
-    │
-    ├── BREAK ────► Core
-    │
-    └── COMPLETE ─► terminate process
-```
+### Counselor
 
-The Counselor therefore controls the continuation of the process without controlling the authorization boundary of an individual action.
-
----
-
-# 4. Counselor Objective
-
-The Counselor has an explicit optimization objective:
-
-> **Complete the authorized Objective successfully in as few iterations as reasonably possible.**
-
-This is an optimization criterion for process control.
-
-It does not mean that the Counselor is permitted to reduce or weaken authorization requirements in order to reduce the number of iterations.
-
-Therefore:
+The Counselor may submit requests such as:
 
 ```text
-iteration efficiency
-        ≠
-authorization authority
-```
-
-The Counselor may seek a shorter path to successful completion, but every iteration remains subject to the existing authorization architecture.
-
----
-
-# 5. Goal Assessment
-
-The Counselor evaluates whether the Objective has been achieved.
-
-Its assessment may use:
-
-* the current protocol context,
-* results of previous iterations,
-* information explicitly available to it,
-* state information supplied through the Core,
-* and other authorized observations.
-
-The Counselor may therefore ask the Core:
-
-```text
+NEXT_ITERATION_REQUEST
+BREAK_REQUEST
 GOAL_STATUS_REQUEST
 ```
 
-For example:
+These requests concern the state of the overall process.
+
+### Planner
+
+The Planner submits the concrete instruction for the current iteration:
+
+```text
+ITERATION_INSTRUCTION
+```
+
+This instruction may subsequently require information authorization and/or action authorization.
+
+The two request classes must not be conflated.
+
+```text
+Counselor → Core
+    process control
+
+Planner → Core
+    concrete operation
+```
+
+---
+
+# 3. Correct Counselor–Core Flow
+
+The fundamental flow is:
 
 ```text
 Counselor
     │
-    │ "Is the authorized Objective satisfied?"
+    │ PROCESS-CONTROL REQUEST
     ▼
 Core
     │
+    │ deterministic transition
     ▼
-GOAL_STATUS_RESPONSE
+Process State
 ```
 
-The Core provides the response according to the defined protocol.
+For a new iteration:
 
-The Counselor does not infer that the goal has been achieved merely because the Planner reports success.
+```text
+Counselor
+    │
+    │ NEXT_ITERATION_REQUEST
+    ▼
+Core
+    │
+    │ if continuation is permitted
+    ▼
+ITERATION OPEN
+    │
+    ▼
+Planner
+```
+
+The Planner only receives the iteration after the Core has established the corresponding process state.
 
 ---
 
-# 6. Planner Does Not Control Re-submission
+# 4. NEXT Iteration
 
-The Planner may provide information relevant to goal achievement.
+The Counselor evaluates the current process state and may determine that another iteration is required.
 
-For example, the Planner may report:
-
-```text
-ITERATION_RESULT
-GOAL_PROGRESS
-RELEVANT_STATE
-OBSERVATION
-```
-
-However, the Planner does not decide whether the process should be submitted for another iteration.
-
-The decision to initiate another iteration belongs to the Counselor.
-
-Thus:
+It then submits:
 
 ```text
-Planner:
-    "This iteration produced result X."
-
-        ≠
-
-Planner:
-    "Therefore submit another iteration."
+NEXT_ITERATION_REQUEST
 ```
 
-The Counselor evaluates the result and determines whether another iteration is appropriate.
+The Core evaluates the request against its deterministic constraints.
+
+If continuation is permitted:
+
+```text
+NEXT_ITERATION_REQUEST
+        │
+        ▼
+       Core
+        │
+        ▼
+ITERATION OPEN
+        │
+        ▼
+     Planner
+```
+
+The Planner then defines the instruction for that iteration.
+
+The Planner does not decide whether the iteration exists.
+
+The Counselor does not define the instruction.
+
+The Core establishes the iteration state.
 
 ---
 
-# 7. Re-submission Request
+# 5. Planner Instruction
 
-When the Counselor determines that additional work is required, it creates a new iteration request.
+Once an iteration has been opened, the Planner generates the instruction for that iteration.
+
+```text
+Core
+  │
+  │ iteration opened
+  ▼
+Planner
+  │
+  │ ITERATION_INSTRUCTION
+  ▼
+Core
+```
+
+The Core then applies the normal authorization architecture to that instruction.
 
 Conceptually:
 
 ```text
-Counselor
-    │
-    │ RE-SUBMIT / NEXT
-    ▼
-Core
-    │
-    ▼
-Planner
-    │
-    │ new iteration instruction
-    ▼
-Core
+ITERATION_INSTRUCTION
+        │
+        ▼
+    Decisioner
+        │
+   ┌────┼────┐
+   ▼    ▼    ▼
+ ALLOW DENY CLARIFY
+   │    │    │
+   ▼    ▼    ▼
+ Core  Core  clarification
+   │
+   ▼
+ EFFECT
 ```
 
-The re-submission does not bypass authorization.
-
-A new iteration is a new authorization-relevant process step.
-
-The applicable authorization rules continue to apply.
+Thus the Counselor's decision to continue does not authorize the Planner's instruction.
 
 ---
 
-# 8. Break Request
+# 6. BREAK Request
 
-The Counselor may also determine that continuation should stop or that the current process requires a controlled break.
+The Counselor may determine that continuation should stop or that a controlled break is required.
 
-It can therefore issue a:
+It submits:
 
 ```text
 BREAK_REQUEST
 ```
 
-to the Core.
-
-Conceptually:
+The request is sent directly to the Core because the resulting process transition belongs to the Core's security and control boundary.
 
 ```text
 Counselor
@@ -229,325 +217,303 @@ Counselor
     │ BREAK_REQUEST
     ▼
 Core
+    │
+    ▼
+BREAK / HALT STATE
 ```
 
-The Core determines the corresponding deterministic transition according to the defined protocol.
+The Counselor does not directly terminate the Core.
 
-The Counselor cannot use a break request to override a Core-enforced security state.
+It requests the transition.
+
+The Core performs the transition.
 
 ---
 
-# 9. Counselor Does Not Control Maximum Iteration Count
+# 7. Goal Status Request
 
-The Counselor evaluates **goal achievement and process progress**.
+The Counselor may also request information from the Core about whether the Objective has been achieved.
 
-It does not determine the maximum number of iterations permitted by the system.
+```text
+Counselor
+    │
+    │ GOAL_STATUS_REQUEST
+    ▼
+Core
+    │
+    ▼
+GOAL_STATUS_RESPONSE
+    │
+    ▼
+Counselor
+```
 
-The maximum iteration count is a Core-controlled constraint.
+The Planner may provide information relevant to determining goal achievement.
+
+However, the Planner does not control the goal-status query.
+
+For example:
+
+```text
+Planner:
+    ITERATION_RESULT
+    "The requested operation produced result X."
+```
+
+does not itself cause:
+
+```text
+GOAL_STATUS_REQUEST
+```
+
+The Counselor independently decides whether it requires a goal-status evaluation.
+
+---
+
+# 8. Goal Status Is Not Iteration Authorization
+
+The Core's response to a goal-status request is information for the Counselor.
+
+For example:
+
+```text
+GOAL_STATUS = ACHIEVED
+```
+
+or:
+
+```text
+GOAL_STATUS = NOT_ACHIEVED
+```
+
+does not itself determine the next process transition.
+
+The Counselor interprets the result within its process-control objective.
+
+For example:
+
+```text
+GOAL_STATUS = NOT_ACHIEVED
+        │
+        ▼
+Counselor
+        │
+        └── NEXT_ITERATION_REQUEST
+```
+
+or:
+
+```text
+GOAL_STATUS = ACHIEVED
+        │
+        ▼
+Counselor
+        │
+        └── COMPLETE
+```
+
+The Core remains responsible for enforcing the resulting process transition.
+
+---
+
+# 9. Maximum Iteration Count
+
+The Counselor evaluates whether another iteration is useful for achieving the Objective.
+
+It does **not** determine the maximum permitted number of iterations.
+
+That limit belongs to the Core.
 
 Therefore:
 
 ```text
 Counselor:
-    "Another iteration would be useful."
+    NEXT_ITERATION_REQUEST
 
 Core:
-    "Iteration limit reached."
-
-Core:
-    HALT
+    ITERATION_LIMIT_REACHED
 ```
 
-The Counselor cannot override this transition.
+results in:
 
-This creates a deliberate separation:
+```text
+HALT / DENY CONTINUATION
+```
+
+The Counselor cannot override the limit.
+
+This creates an intentional separation:
 
 ```text
 Counselor
-    → qualitative / goal-oriented iteration decision
+    → Is another iteration useful?
 
 Core
-    → deterministic iteration constraints
+    → Is another iteration permitted?
 ```
-
-The Core therefore remains the final authority over hard iteration boundaries.
 
 ---
 
-# 10. Counselor and Core
+# 10. Counselor Optimization Objective
 
-The Counselor may request a transition from the Core.
+The Counselor has the process-level optimization objective:
 
-It cannot directly perform the transition.
+> **Complete the authorized Objective successfully in as few iterations as reasonably possible.**
 
-For example:
+The Counselor therefore evaluates:
+
+* progress toward the Objective,
+* results of previous iterations,
+* whether additional work is useful,
+* whether the Objective has been achieved,
+* and whether another iteration is justified.
+
+It does not optimize by weakening authorization, safety, or Core constraints.
+
+Conceptually:
 
 ```text
-Counselor
-    │
-    │ NEXT_REQUEST
-    ▼
-Core
-    │
-    ├── permit next iteration
-    ├── reject
-    ├── escalate
-    └── halt
+minimize iterations
+        subject to
+        ├── authorization constraints
+        ├── Core constraints
+        ├── information constraints
+        ├── safety constraints
+        └── iteration limits
+```
+
+---
+
+# 11. Counselor Cannot Become an Authorization Layer
+
+The Counselor's `NEXT_ITERATION_REQUEST` does not mean:
+
+```text
+ALLOW
 ```
 
 Likewise:
 
 ```text
+BREAK_REQUEST
+```
+
+does not mean:
+
+```text
+HALT
+```
+
+The Counselor requests process transitions.
+
+The Core determines the corresponding deterministic transition.
+
+Therefore:
+
+> **The Counselor controls iteration requests, not authorization.**
+
+---
+
+# 12. Complete Iteration Cycle
+
+A complete iteration cycle is therefore:
+
+```text
+                 ┌──────────────┐
+                 │  Counselor   │
+                 └──────┬───────┘
+                        │
+              NEXT_ITERATION_REQUEST
+                        │
+                        ▼
+                 ┌──────────────┐
+                 │     Core     │
+                 └──────┬───────┘
+                        │
+                  ITERATION OPEN
+                        │
+                        ▼
+                 ┌──────────────┐
+                 │    Planner   │
+                 └──────┬───────┘
+                        │
+               ITERATION_INSTRUCTION
+                        │
+                        ▼
+                 ┌──────────────┐
+                 │  Decisioner  │
+                 └──────┬───────┘
+                        │
+                 authorization
+                        │
+                        ▼
+                 ┌──────────────┐
+                 │     Core     │
+                 └──────┬───────┘
+                        │
+                      EFFECT
+                        │
+                        ▼
+                 resulting state
+                        │
+                        ▼
+                 ┌──────────────┐
+                 │  Counselor   │
+                 └──────────────┘
+```
+
+The cycle may terminate through:
+
+```text
+GOAL ACHIEVED
+BREAK
+HALT
+ITERATION LIMIT
+AUTHORIZATION FAILURE
+ESCALATION
+```
+
+---
+
+# 13. Fundamental Separation
+
+The resulting architecture can be summarized as:
+
+```text
 Counselor
-    │
-    │ BREAK_REQUEST
-    ▼
+    FOR / NEXT
+        │
+        │ process-control request
+        ▼
 Core
-    │
-    └── deterministic transition
-```
-
-This preserves the fundamental architecture:
-
-> **The Counselor advises continuation. The Core controls the transition.**
-
----
-
-# 11. Core as Conditional Enforcement
-
-The architectural relationship can be understood through a programming analogy.
-
-The Counselor provides the iterative control structure:
-
-```text
-FOR / NEXT
-```
-
-The Core provides the conditional enforcement boundary:
-
-```text
-IF authorized
-    THEN effect
-ELSE
-    no effect / defined transition
-```
-
-The Planner supplies the instruction executed within an iteration.
-
-Conceptually:
-
-```text
-COUNSELOR:
-    NEXT?
-
-        ↓
-
-PLANNER:
-    instruction for iteration N
-
-        ↓
-
-CORE:
-    IF authorization permits instruction
-        THEN perform effect
-    ELSE
-        enforce defined non-effect transition
-
-        ↓
-
-COUNSELOR:
-    evaluate resulting state
-```
-
-This analogy is architectural rather than an implementation requirement.
-
----
-
-# 12. Iteration Is Not Authorization
-
-A new iteration must not inherit authorization merely because a previous iteration was authorized.
-
-For example:
-
-```text
-Iteration 1
-    Action A
-    → ALLOW
-    → EFFECT
-```
-
-does not imply:
-
-```text
-Iteration 2
-    Action B
-    → ALLOW
-```
-
-The second iteration remains subject to the applicable authorization process.
-
-Thus:
-
-> **Iteration continuity does not imply authorization continuity.**
-
----
-
-# 13. Goal Achievement Does Not Authorize the Final Action
-
-Likewise, the Counselor's assessment that an Objective has been achieved does not itself constitute authorization.
-
-The Counselor may determine:
-
-```text
-GOAL = ACHIEVED
-```
-
-but the Core remains responsible for enforcing the resulting process transition.
-
-Similarly, the Counselor may determine:
-
-```text
-GOAL = NOT ACHIEVED
-```
-
-without thereby acquiring authority to execute another action.
-
-The Counselor requests another iteration.
-
-The Planner proposes the next instruction.
-
-The Core evaluates and enforces the applicable authorization transition.
-
----
-
-# 14. Iteration State
-
-Each iteration should have an explicit identifier.
-
-For example:
-
-```text
-ITERATION_ID
-PARENT_ITERATION_ID
-OBJECTIVE_ID
-COUNSELOR_DECISION
-PLANNER_INSTRUCTION
-CORE_DECISION
-CORE_RESULT
-GOAL_STATUS
-TIMESTAMP
-```
-
-This permits the process to be reconstructed as:
-
-```text
-Iteration 1
-    ↓
-Iteration 2
-    ↓
-Iteration 3
-    ↓
-...
-    ↓
-Goal achieved / break / halt
-```
-
-The iteration history is part of the Core-controlled protocol context.
-
----
-
-# 15. Counselor Optimization Boundary
-
-The Counselor's optimization target is bounded.
-
-It seeks:
-
-```text
-successful Objective completion
-```
-
-while minimizing:
-
-```text
-number of iterations
-```
-
-subject to:
-
-```text
-authorization constraints
-Core constraints
-information constraints
-safety constraints
-iteration limits
-escalation rules
-```
-
-Therefore the Counselor cannot optimize by weakening the constraints themselves.
-
-Formally:
-
-```text
-minimize iterations
-
-subject to:
-    authorization constraints
-    Core invariants
-    information boundaries
-    execution constraints
-    iteration limits
-```
-
----
-
-# 16. Fundamental Separation
-
-The architecture can therefore be summarized as:
-
-```text
-                 COUNSELOR
-                 FOR / NEXT
-                     │
-                     │
-                     ▼
-                  PLANNER
-             iteration instruction
-                     │
-                     ▼
-                   CORE
-               IF / ENFORCE
-                     │
-                     ▼
-                  EFFECT
-                     │
-                     ▼
-               RESULT / STATE
-                     │
-                     ▼
-                 COUNSELOR
-```
-
-Each component has a distinct function:
-
-```text
-Counselor
-    → iteration control
-
+    IF / deterministic transition
+        │
+        ▼
 Planner
-    → iteration instruction
-
+    iteration instruction
+        │
+        ▼
 Decisioner
-    → authorization decision
-
+    authorization evaluation
+        │
+        ▼
 Core
-    → deterministic enforcement
+    authorization enforcement
+        │
+        ▼
+Effect
+        │
+        ▼
+Counselor
 ```
 
-The central principle is:
+The programming analogy is therefore:
 
-> **The Counselor controls iteration, the Planner defines the work of an iteration, the Decisioner evaluates authorization, and the Core enforces the resulting transition.**
+> **The Counselor is the iterative control structure. The Planner is the body of the iteration. The Decisioner evaluates authorization. The Core is the deterministic conditional and enforcement boundary.**
 
-The Counselor may extend the process horizontally through additional iterations, but it cannot extend the Agent's authorization boundary.
+Most importantly:
+
+> **A Counselor request can initiate or terminate a process transition, but it can never itself authorize the concrete effect produced within an iteration.**
 
 ---
 
