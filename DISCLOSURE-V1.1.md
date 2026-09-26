@@ -834,6 +834,8 @@ The use of external intelligence does not transform the external service into th
 
 # 28. Architectural Composition
 
+# 28. Architectural Composition
+
 The resulting architecture can therefore contain multiple highly capable modules:
 
 ```text
@@ -843,18 +845,18 @@ The resulting architecture can therefore contain multiple highly capable modules
                        Objective Authorization
                                 │
                                 ▼
-                 ┌────────────────────────────┐
+                 ┌─────────────────────────────┐
                  │       Program Space         │
-                 │                            │
-                 │ Planner      Counselor      │
-                 │    │             │          │
+                 │                             |   Security Counsel Advice
+                 │ Planner      Counselor      │  <----------------------------    Security Counsel
+                 │    │             │          │  ---------------------------->
                  └────┼─────────────┼──────────┘
                       │             │
                  instruction     process control
                       │             │
                       ▼             ▼
               ┌──────────────────────────────┐
-              │       Security Core           │
+              │       Security Core          │            
               │                              │
               │ Decisioner                   │
               │ Deterministic Authorization  │
@@ -864,21 +866,35 @@ The resulting architecture can therefore contain multiple highly capable modules
               │ Audit Log                    │
               └──────────────┬───────────────┘
                              │
-                       optional advice
-                             │
                              ▼
-                    ┌──────────────────┐
-                    │ Security Counsel │
-                    └──────────────────┘
-                             │
-                             ▼
-                       Core processing
-                             │
-                             ▼
-                     Protected Effect
+                      Protected Effect
+
+
+
+The Security Counsel is **not part of the normal execution path**.
+
+It is an optional advisory path that may be invoked by the Security Core when additional security analysis is required.
+
+The communication is conceptually:
+
+```text
+Security Core
+      │
+      │ Anonymized Security Request
+      ▼
+Security Counsel
+      │
+      │ Security Counsel Advice
+      ▼
+Security Core
 ```
 
-The individual components may be implemented by different models, different vendors, different processes, different processors, or different physical systems.
+The Security Counsel therefore does not sit between the Decisioner and the Core, nor between the Core and the protected effect.
+
+It provides an additional security-analysis channel to the side of the authoritative Core.
+
+The Core remains the authoritative security and enforcement boundary regardless of whether the Security Counsel is consulted.
+
 
 ---
 
