@@ -837,77 +837,100 @@ The Security Architecture and the Processing Architecture are composed of indepe
 
 The resulting architecture therefore contains multiple modules that separate capability and authorization along orthogonal dimensions.
 
+The authorization of an Objective is performed by the Security Core before the Processing Architecture is activated.
+
 ```text
-                         Objective-Creator
-                                │
-                                ▼
-                       Objective Authorization
-                                │
-                                ▼
-                 ┌─────────────────────────────┐
-                 │       Program Space         │
-                 │                             │
-                 │ Planner      Counselor      │
-                 │    │             │          │
-                 └────┼─────────────┼──────────┘
-                      │             │
-                 instruction     process control
-                      │             │
-                      ▼             ▼
-              ┌──────────────────────────────┐
-              │       Security Core          │
-              │                              │
-              │ Decisioner                   │
-              │ Deterministic Authorization  │
-              │ Core                         │
-              │                              │
-              │ Context Log                  │
-              │ Audit Log                    │
-              └──────────────┬───────────────┘
-                             │
-                             ▼
-                      Protected Effect
-
-
-              Anonymized Security Request
-                             ────────────────►
-                                      ┌─────────────────────┐
-                                      │   Security Counsel  │
-                                      │  Higher-Level       │
-                                      │  Security Instance  │
-                                      └─────────────────────┘
-                             ◄────────────────
-                           Security Counsel Advice
+                         ┌───────────────────┐
+                         │  Objective-Creator│
+                         └─────────┬─────────┘
+                                   │
+                              Objective
+                                   │
+                                   ▼
+                    ┌───────────────────────────┐
+                    │       SECURITY CORE       │
+                    │                           │
+                    │  Objective Authorization  │
+                    │  Decisioner               │
+                    │  Deterministic Core       │
+                    │                           │
+                    │  Context Log              │
+                    │  Audit Log                │
+                    └─────────────┬─────────────┘
+                                  │
+                          authorized Objective
+                                  │
+                                  ▼
+                    ┌───────────────────────────┐
+                    │      PROGRAM SPACE        │
+                    │                           │
+                    │   Planner      Counselor  │
+                    │      │             │      │
+                    └──────┼─────────────┼──────┘
+                           │             │
+                      instruction   process control
+                           │             │
+                           └──────┬──────┘
+                                  ▼
+                    ┌───────────────────────────┐
+                    │       SECURITY CORE       │
+                    │                           │
+                    │  Decisioner               │
+                    │  Deterministic            │
+                    │  Authorization Core       │
+                    │                           │
+                    │  Context Log              │
+                    │  Audit Log                │
+                    └─────────────┬─────────────┘
+                                  │
+                                  ▼
+                           Protected Effect
 ```
+
+### Objective Clarification
+
+```text
+        Objective-Creator
+               ▲
+               │
+               │  Objective Clarification
+               │
+               ▼
+          Security Core
+```
+
+The **Objective Authorization** phase is part of the Security Architecture and occurs before the Processing Architecture is activated.
+
+If the Objective cannot be sufficiently evaluated, the Security Core may initiate a `CLARIFY` cycle with the Objective-Creator.
+
+The Objective-Creator may provide additional information or clarification, which is returned to the Security Core for renewed evaluation.
+
+Only after the Objective has reached the Core-defined authorized state may the Processing Architecture begin.
+
+### Security Counsel
+
+```text
+                    Security Core
+                         │
+                         │ Anonymized
+                         │ Security Request
+                         ▼
+                  Security Counsel
+                         │
+                         │ Security Counsel Advice
+                         ▼
+                    Security Core
+```
+
+The Security Counsel may optionally support the Security Core during such security evaluations through its separate advisory channel.
 
 The Security Counsel is **not part of the normal execution path**.
 
 It is an optional advisory path that may be invoked by the Security Core when additional security analysis is required.
 
-The Security Counsel receives only the information provided through the Core-defined security interface. The Security Core remains the authoritative security and enforcement boundary regardless of whether the Security Counsel is consulted.
+The Security Counsel receives only the information provided through the Core-defined security interface.
 
-
-
-```text
-Security Core
-      │
-      │ Anonymized Security Request
-      ▼
-Security Counsel
-      │
-      │ Security Counsel Advice
-      ▼
-Security Core
-```
-
-The Security Counsel therefore does not sit between the Decisioner and the Core, nor between the Core and the protected effect.
-
-It provides an additional security-analysis channel to the side of the authoritative Core.
-
-The Core remains the authoritative security and enforcement boundary regardless of whether the Security Counsel is consulted.
-
-
----
+The Security Core remains the authoritative security and enforcement boundary throughout both Objective Authorization and subsequent execution.
 
 # 29. Fundamental Role Separation
 
