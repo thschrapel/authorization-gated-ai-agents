@@ -831,12 +831,11 @@ Enforcement
 The use of external intelligence does not transform the external service into the authorization authority.
 
 ---
-
 # 28. Architectural Composition
 
-# 28. Architectural Composition
+The Security Architecture and the Processing Architecture are composed of independent and strictly separated components.
 
-The resulting architecture can therefore contain multiple highly capable modules:
+The resulting architecture therefore contains multiple modules that separate capability and authorization along orthogonal dimensions.
 
 ```text
                          Objective-Creator
@@ -847,16 +846,16 @@ The resulting architecture can therefore contain multiple highly capable modules
                                 ▼
                  ┌─────────────────────────────┐
                  │       Program Space         │
-                 │                             |   Security Counsel Advice
-                 │ Planner      Counselor      │  <----------------------------    Security Counsel
-                 │    │             │          │  ---------------------------->
+                 │                             │
+                 │ Planner      Counselor      │
+                 │    │             │          │
                  └────┼─────────────┼──────────┘
                       │             │
                  instruction     process control
                       │             │
                       ▼             ▼
               ┌──────────────────────────────┐
-              │       Security Core          │            
+              │       Security Core           │
               │                              │
               │ Decisioner                   │
               │ Deterministic Authorization  │
@@ -870,12 +869,24 @@ The resulting architecture can therefore contain multiple highly capable modules
                       Protected Effect
 
 
+              Anonymized Security Request
+                             ────────────────►
+                                      ┌─────────────────────┐
+                                      │   Security Counsel   │
+                                      │  Higher-Level        │
+                                      │  Security Instance   │
+                                      └─────────────────────┘
+                             ◄────────────────
+                           Security Counsel Advice
+```
 
 The Security Counsel is **not part of the normal execution path**.
 
 It is an optional advisory path that may be invoked by the Security Core when additional security analysis is required.
 
-The communication is conceptually:
+The Security Counsel receives only the information provided through the Core-defined security interface. The Security Core remains the authoritative security and enforcement boundary regardless of whether the Security Counsel is consulted.
+
+
 
 ```text
 Security Core
