@@ -855,7 +855,7 @@ The resulting architecture therefore contains multiple modules that separate cap
                       │             │
                       ▼             ▼
               ┌──────────────────────────────┐
-              │       Security Core           │
+              │       Security Core          │
               │                              │
               │ Decisioner                   │
               │ Deterministic Authorization  │
@@ -872,9 +872,9 @@ The resulting architecture therefore contains multiple modules that separate cap
               Anonymized Security Request
                              ────────────────►
                                       ┌─────────────────────┐
-                                      │   Security Counsel   │
-                                      │  Higher-Level        │
-                                      │  Security Instance   │
+                                      │   Security Counsel  │
+                                      │  Higher-Level       │
+                                      │  Security Instance  │
                                       └─────────────────────┘
                              ◄────────────────
                            Security Counsel Advice
