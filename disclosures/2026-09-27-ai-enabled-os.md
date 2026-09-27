@@ -2,32 +2,29 @@
 
 ## 1. Purpose
 
-The Authorization Agent architecture can be extended from an agent-level security architecture into a broader operating-system architecture in which AI components interact with system resources through explicit, authorization-mediated interfaces.
+The Authorization Agent architecture can be extended into an operating-system architecture in which AI components interact with system capabilities through explicit authorization-mediated interfaces.
 
-The resulting system may be understood as an **AI-Enabled Operating System**.
+The resulting architecture may be understood as an **AI-Enabled Operating System**.
 
-The term does not require that the underlying operating system itself be replaced.
+This does not require replacing an existing operating system.
 
-It describes an architecture in which AI-originated interaction with operating-system resources is subject to a defined authorization and enforcement layer.
+It describes an architecture in which AI-originated capabilities are mediated by a security architecture that remains distinct from the AI components themselves.
 
 ## 2. AI as a System Component
 
-AI components may perform roles analogous to conventional software components while retaining their probabilistic and adaptive nature.
+AI components may provide:
 
-Such components may include:
-
-* Planners,
-* Counselors,
-* Decisioners,
-* translators,
-* specialized analysis models,
-* user-facing agents,
-* autonomous processes,
-* and other intelligent components.
+* planning,
+* reasoning,
+* interpretation,
+* communication,
+* analysis,
+* process optimization,
+* and other forms of intelligent capability.
 
 Their intelligence does not itself establish operating-system authority.
 
-The system therefore separates:
+The architecture therefore maintains:
 
 ```text
 AI Capability
@@ -35,172 +32,276 @@ AI Capability
 System Authority
 ```
 
-An AI component may be highly capable while having no direct authority to access or modify system resources.
+## 3. AI-Mediated System Architecture
 
-## 3. Authorization-Mediated Operating System
-
-The fundamental architectural pattern is:
+A general architecture is:
 
 ```text
 AI Components
       │
-      │ requests
       ▼
-AI / System Interface
+Core-Controlled Input Boundary
+      │
+      ▼
+Protocol / Interface Adapter
       │
       ▼
 Security Core
       │
-      │ authorized transitions
       ▼
 Operating System Resources
 ```
 
-Relevant AI-originated interactions with system resources are therefore represented as explicit requests that can be evaluated and enforced.
+The exact implementation may use native APIs, adapters, translators, system services, kernel interfaces, communication protocols, or other mechanisms.
 
-Resources may include:
+The security property remains independent of the particular interface technology.
 
-* files,
-* processes,
-* devices,
-* networks,
-* memory,
-* credentials,
-* external services,
-* applications,
-* sensors,
-* actuators,
-* and other system capabilities.
+## 4. Core-Controlled Communication
 
-## 4. Operating-System Security Boundary
+AI communication must enter the security architecture through a Core-controlled boundary.
 
-The Security Core becomes an architectural boundary between intelligent components and protected system resources.
+No translator, protocol adapter, or AI-facing interface should receive an unrestricted security-relevant input stream that bypasses the Core boundary.
 
-The Core remains responsible for authoritative authorization and deterministic enforcement.
+This provides a consistent architectural rule:
 
-The AI components remain responsible for interpretation, planning, reasoning, and other intelligent functions.
+> **Interpretation may be delegated. Admission to the authorization architecture is controlled.**
 
-This preserves the fundamental separation:
+## 5. Protocol Adaptation
 
-> **Intelligence may determine what it wants to do. The Security Core determines what the system permits it to do.**
+Different AI components may communicate through different interfaces.
 
-## 5. Multiple AI Components
-
-An AI-Enabled Operating System may host multiple independent AI components.
-
-Each component may have its own:
-
-* identity,
-* authority scope,
-* context,
-* objectives,
-* capabilities,
-* resource limits,
-* and communication interfaces.
-
-Authority is not inherited merely because components communicate with one another.
-
-Communication therefore does not imply authorization.
-
-## 6. Common System Interface
-
-A future AI-Enabled Operating System may provide a common system interface through which AI components request access to system capabilities.
-
-The interface may expose operations such as:
+An AI-Enabled Operating System may therefore support multiple communication mechanisms:
 
 ```text
-READ
-WRITE
-EXECUTE
-CREATE
-DELETE
-CONNECT
-COMMUNICATE
-OBSERVE
-CONTROL
+             AI Components
+                  │
+       ┌──────────┼──────────┐
+       │          │          │
+    WebChat     API      Editor /
+                         Agent Protocol
+       │          │          │
+       └──────────┼──────────┘
+                  ▼
+        Core-Controlled Boundary
+                  │
+                  ▼
+             Translators
+                  │
+                  ▼
+            Security Core
 ```
 
-The exact operation vocabulary is implementation-specific.
+The communication layer can therefore evolve independently from the authorization architecture.
 
-The architectural requirement is that operations affecting protected system resources are represented in a form that can be evaluated and enforced by the Security Core.
+## 6. Capability and Authorization
 
-## 7. Operating-System Mediation
+The operating system may expose a large set of capabilities.
 
-The architecture may use adapters, translators, API layers, system services, kernel interfaces, or other mechanisms to mediate AI-originated operations.
+The AI component does not automatically receive all of them.
 
-The implementation mechanism is not fundamental to the architectural principle.
+The Security Core determines which requested transitions are authorized.
 
-The important property is:
-
-> **AI-originated capability must not bypass the authorization boundary merely because the underlying operating system provides a lower-level interface.**
-
-## 8. AI-Enabled Security Architecture
-
-An AI-Enabled Operating System may incorporate the previously defined Authorization Agent and Safe Agent concepts.
-
-Conceptually:
+This preserves the orthogonal separation:
 
 ```text
-                         AI-Enabled OS
-                              │
-              ┌───────────────┴───────────────┐
-              │                               │
-        AI Components                  System Components
-              │                               │
-              ▼                               │
-        AI Interface                         │
-              │                               │
-              ▼                               │
-        Security Core ◄───────────────────────┘
+Capability
+    ×
+Authorization
+```
+
+A capable system may therefore contain components with very different authorization scopes.
+
+## 7. Distributed AI Architecture
+
+An AI-Enabled Operating System does not require all AI computation to occur locally.
+
+AI components may execute:
+
+* locally,
+* on another device,
+* on a remote server,
+* through an external AI provider,
+* or in distributed combinations.
+
+The architecture can preserve local authorization boundaries despite remote computation.
+
+For example:
+
+```text
+Local System                         External Services
+
+AI Interface
+     │
+     ▼
+Security Core
+     │
+     ├──────────────► External AI
+     │                    │
+     │                    ▼
+     │              computational result
+     │                    │
+     ◄────────────────────┘
+     │
+     ▼
+Protected Resources
+```
+
+The external service provides capability or computation.
+
+The local security architecture retains control over protected local effects.
+
+## 8. Resource-Constrained Systems
+
+The architecture can be particularly valuable on systems with limited computational resources.
+
+Such a system may intentionally use:
+
+* lightweight local security logic,
+* externally provided AI computation,
+* a trusted external Security Counsel,
+* and strong local privacy and effect boundaries.
+
+A possible architecture is:
+
+```text
+             External AI
+                  │
+                  ▼
+          External Security
+             Counsel
+                  │
+                  ▼
+          Local Security Core
+                  │
+                  ▼
+          Local Resources
+```
+
+The local system may therefore depend heavily on external intelligence while maintaining local control over sensitive resources.
+
+## 9. Asymmetric Trust
+
+Different components may have different trust relationships.
+
+For example, a consumer system may place:
+
+* high trust in a certified external Security Counsel,
+* high dependence on external AI computation,
+* limited computational responsibility on the local system,
+* and strong local authority over privacy and physical or digital effects.
+
+This is not a contradiction.
+
+Trust, capability, authorization, and enforcement are separate architectural properties.
+
+## 10. Privacy Boundary
+
+A local Security Core may enforce information-access boundaries before information is transmitted to an external AI component.
+
+Thus:
+
+```text
+Local Information
+       │
+       ▼
+Security Core
+       │
+       ├── DENY
+       ├── REDACT / LIMIT
+       └── ALLOW
               │
               ▼
-       Protected Resources
+         External AI
 ```
 
-The Security Core therefore forms a common security boundary across heterogeneous intelligent components.
+This permits external computation without requiring unrestricted exposure of local information.
 
-## 9. Safe Agent Integration
+The exact information-minimization mechanisms remain implementation-specific.
 
-A Safe Agent may operate as an AI component within such an operating system.
+## 11. Damage-Prevention Boundary
 
-Its normative safety invariants remain independent of ordinary operating-system permissions.
+The same architecture may enforce a local boundary for effects.
 
-A system permission therefore does not imply normative permission.
+External AI may propose an action, but the local Security Core determines whether that action can affect the protected system.
 
-Conversely, a normative `HALT` condition may require the Security Core to interrupt processing or system activity independently of ordinary Planner control flow.
+This is especially relevant for consumer systems where:
 
-## 10. Long-Term Architectural Direction
+* local computation is limited,
+* AI capability is increasingly external,
+* and prevention of unwanted effects is more important than local model autonomy.
 
-The AI-Enabled Operating System is intentionally a top-level architectural concept.
+## 12. Safe Agent Integration
 
-It does not prescribe:
+A Safe Agent can form the normative security layer of an AI-Enabled Operating System.
 
-* a particular operating system,
-* a particular hardware architecture,
-* a particular AI model,
-* a particular kernel implementation,
-* a particular programming language,
-* or a particular authorization protocol.
+Its non-overridable invariants remain applicable regardless of whether the intelligence producing a request is:
 
-Its central proposition is architectural:
+* local,
+* remote,
+* proprietary,
+* open,
+* known,
+* unknown,
+* or externally hosted.
 
-> **AI capabilities can be integrated into an operating environment while keeping capability and authorization as separate dimensions.**
+The source of intelligence does not alter the fundamental safety boundary.
 
-The operating system provides resources and execution mechanisms.
+## 13. Architectural Evolution
 
-AI components provide intelligence.
+The AI-Enabled Operating System should therefore be understood as a scalable architecture rather than a requirement for a new operating-system kernel.
 
-The Security Core provides the authoritative boundary between them.
-
-## 11. Architectural Principle
-
-The resulting model can be summarized as:
+Possible implementations range from:
 
 ```text
-AI provides intelligence.
-The OS provides capability.
-The Security Core provides authorization.
-The system provides enforcement.
+Existing OS
+     +
+Authorization AI Shell
 ```
 
-This architecture allows increasingly capable AI components to operate within an increasingly explicit and controllable system boundary without requiring the operating system to treat intelligence itself as authority.
+through:
+
+```text
+Existing OS
+     +
+Native AI Security Interface
+```
+
+to:
+
+```text
+AI-Enabled Operating System
+     +
+Security Core integrated into
+the operating-system architecture
+```
+
+The underlying architectural principle remains stable across these implementations.
+
+## 14. Architectural Principle
+
+The AI-Enabled Operating System separates:
+
+```text
+Intelligence
+     │
+     ├── may be external
+     ├── may be distributed
+     ├── may be probabilistic
+     └── may be highly capable
+
+from
+
+Authority
+     │
+     ├── explicitly scoped
+     ├── independently evaluated
+     └── deterministically enforced
+```
+
+This allows system designers to trade local computation for external AI capability without necessarily surrendering local control over privacy, authorization, or protected effects.
+
+The resulting architecture is therefore not merely a prototype environment.
+
+It can serve as an alternative system architecture for AI-enabled devices and services in which:
+
+> **AI capability may be distributed, while authorization and enforcement remain explicitly bounded.**
