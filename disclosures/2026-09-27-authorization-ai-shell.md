@@ -1,77 +1,103 @@
-# Authorization AI Shell — Prototype Architecture
+# Authorization AI Shell — Architectural Extension
 
 ## 1. Purpose
 
-The **Authorization AI Shell** is a prototype-oriented implementation pattern for testing the Authorization Agent architecture without requiring a complete AI-Enabled Operating System.
+The **Authorization AI Shell** provides a controlled interface between an AI component and an operating environment.
 
-It provides AI components with a deliberately small interaction surface through which requests for information, execution, communication, and other system operations can be translated into the Authorization Agent protocol.
+It may be implemented as a prototype architecture, but is not limited to prototype use.
 
-The Authorization AI Shell is therefore a practical intermediate architecture between an ordinary operating-system shell and a future AI-Enabled Operating System.
+The architecture can also serve as an alternative deployment architecture for systems in which AI capabilities are provided externally while local authorization, privacy protection, and effect prevention remain under local or otherwise explicitly trusted control.
+
+The architecture is particularly applicable where local computational resources are limited or where the potential impact of local actions is sufficiently constrained to permit a lightweight security implementation.
 
 ## 2. Basic Architecture
 
-The prototype may use a WebChat interface as the primary interface to the AI component.
+The AI component communicates through an externally defined communication interface.
+
+This interface is not limited to WebChat.
+
+Possible interfaces include:
+
+* WebChat,
+* application-specific conversational interfaces,
+* editor integrations,
+* agent protocols,
+* local APIs,
+* remote APIs,
+* and other communication protocols capable of carrying AI interaction.
+
+Protocols such as `gptel` for Emacs may therefore serve as possible communication interfaces.
+
+The communication protocol is not itself the security boundary.
 
 ```text
                  AI Component
                        │
-                       │ WebChat
+              AI Communication
+                       │
                        ▼
               ┌──────────────────┐
-              │  Authorization   │
-              │    AI Shell      │
-              │                  │
+              │ Security Core     │
+              │ Input Boundary    │
+              └────────┬─────────┘
+                       │
+                Core-approved
+                 translator input
+                       │
+                       ▼
+              ┌──────────────────┐
               │    Translator    │
               └────────┬─────────┘
                        │
-                 System Request
+                structured request
                        │
                        ▼
               ┌──────────────────┐
-              │  Security Core   │
-              │                  │
-              │ Decisioner        │
-              │ Deterministic    │
-              │ Authorization    │
+              │ Security Core     │
+              │ Authorization     │
               └────────┬─────────┘
                        │
-                authorized operation
+                 authorized effect
                        │
                        ▼
-                 Test / Host OS
+                  System / OS
 ```
 
-## 3. WebChat as Prototype Interface
+## 3. Core-Controlled Input Boundary
 
-The AI component does not require direct operating-system access.
+The Translator must not receive unrestricted or otherwise unvalidated input directly from an AI component.
 
-It communicates through a controlled WebChat interface.
+All input delivered to the Translator must first pass through a Core-controlled interface.
 
-The AI may express requests in natural language, for example:
+This establishes an important architectural boundary:
 
-```text
-Show me file /tmp/test.txt.
-```
+> **The Translator may translate Core-approved input. It does not define what input is admitted to the authorization architecture.**
 
-or:
+The Security Core may therefore:
 
-```text
-Show me the output of the command ls.
-```
+* receive the original communication,
+* establish the communication context,
+* authenticate or identify the sender where applicable,
+* apply protocol restrictions,
+* record the interaction,
+* reject malformed or unauthorized communication,
+* limit available representations,
+* and determine whether the input may be passed to the Translator.
 
-The WebChat interface therefore provides a deliberately narrow communication boundary.
+The Translator operates only on input that has passed this boundary.
 
 ## 4. Translator
 
-A dedicated **Translator** converts AI-generated natural-language system requests into structured system requests understood by the Authorization Agent.
+The Translator converts Core-approved AI interaction into the structured representation required by the Authorization Agent.
 
 For example:
 
 ```text
-"Show me file /tmp/test.txt."
+AI:
+    "Show me file /tmp/test.txt."
 ```
 
-may become:
+may be translated into:
 
 ```text
 READ_FILE
@@ -81,7 +107,8 @@ resource = /tmp/test.txt
 Likewise:
 
 ```text
-"Show me the output of ls."
+AI:
+    "Show me the output of ls."
 ```
 
 may become:
@@ -91,20 +118,38 @@ EXECUTE
 command = ls
 ```
 
-The Translator does not determine whether the operation is authorized.
+The Translator does not establish authorization.
 
-It only translates the request into the defined system-request representation.
+It does not grant permissions.
 
-## 5. Authorization
+It does not provide a parallel security policy.
 
-The translated request enters the normal Authorization Agent architecture.
+Its function is protocol and representation adaptation.
+
+## 5. Translator Trust Boundary
+
+The Translator is therefore deliberately constrained.
+
+It must not:
+
+* establish authorization,
+* expand authorization,
+* reinterpret a Core denial as permission,
+* bypass the Security Core,
+* communicate directly with protected resources,
+* or introduce an alternative execution path.
+
+Its output is itself subject to the normal authorization process.
 
 Conceptually:
 
 ```text
 AI
  │
- │ natural language
+ ▼
+Core Input Boundary
+ │
+ │ permitted translator input
  ▼
 Translator
  │
@@ -112,191 +157,304 @@ Translator
  ▼
 Decisioner
  │
- ├── ALLOW
- ├── DENY
- └── CLARIFY
- │
  ▼
 Deterministic Security Core
  │
  ▼
-System
+Protected Resource
 ```
 
-The Translator therefore cannot turn a denied request into an authorized operation.
+## 6. Communication Independence
 
-## 6. Clarification
+The Authorization AI Shell does not require a particular AI communication protocol.
 
-The Translator also provides an important protocol adaptation function.
-
-The AI component does not need to be trained to speak the Authorization Agent protocol.
+The communication layer may be replaced without changing the fundamental authorization architecture.
 
 For example:
 
 ```text
-AI:
-    "Show me file X."
-
-Translator:
-    READ_FILE(X)
-
-Security Core:
-    CLARIFY
-
-Translator:
-    "Additional information is required
-     before this file can be accessed."
-
-AI:
-    "The file contains the configuration
-     required for the current task."
-
-Translator:
-    clarification response
-
-Security Core:
-    reevaluate
+             ┌── WebChat
+             │
+AI ──────────┼── gptel / editor integration
+             │
+             ├── API
+             │
+             ├── agent protocol
+             │
+             └── other interface
+                     │
+                     ▼
+              Core Input Boundary
+                     │
+                     ▼
+                 Translator
 ```
 
-The AI therefore participates in the authorization process through ordinary conversational interaction.
+The communication protocol therefore remains an interchangeable interface layer.
 
-The authorization semantics remain outside the AI component.
+The Security Core remains independent of the particular user-facing or model-facing communication mechanism.
 
-## 7. Small Trusted Interface
+## 7. Clarification Adaptation
 
-The prototype deliberately minimizes the number of interfaces through which an AI component can affect the system.
+The AI component does not need to be natively trained to implement the Authorization Agent protocol.
 
-Instead of providing the AI with direct access to numerous operating-system APIs, tools, libraries, or services, the prototype exposes a single controlled interaction path:
+If the Security Core requires clarification, the response may be translated into the communication format understood by the AI component.
+
+For example:
 
 ```text
 AI
  │
+ │ request
  ▼
-WebChat
+Core Input Boundary
  │
  ▼
 Translator
  │
  ▼
-Authorization Agent
+Decisioner
+ │
+ │ CLARIFY
+ ▼
+Security Core
  │
  ▼
-System
+communication adapter
+ │
+ ▼
+AI
 ```
 
-This significantly reduces the prototype's interface surface.
+The AI may respond using its native communication format.
 
-## 8. Logging
+The response again passes through the Core-controlled input boundary before being processed further.
 
-Because AI-originated system interactions pass through the Translator and Authorization Agent, the prototype can log the relevant interaction sequence at the authorization boundary.
+Thus, both directions of communication remain subject to the architectural boundary.
 
-A single request can produce a structured record containing, for example:
+## 8. No Direct Model-to-Environment Channel
+
+The AI component must not have an uncontrolled direct channel to protected resources.
+
+The communication interface, Translator, AI model, and external services must not provide a bypass around the Security Core.
+
+The architectural requirement is:
+
+> **Every AI-originated operation capable of producing a protected effect must ultimately pass through the Security Core's authorization and enforcement boundary.**
+
+## 9. Logging
+
+Because communication passes through the Core-controlled input boundary, the architecture can record the relevant interaction before translation.
+
+The system can therefore preserve the relationship between:
 
 ```text
-timestamp
-requester
-natural-language request
+original AI communication
+        ↓
+Core admission
+        ↓
 translated request
-authorization context
-decision
-effect
-result
-```
-
-This provides a direct correspondence between:
-
-```text
-AI statement
-      ↓
-translated operation
-      ↓
+        ↓
 authorization decision
-      ↓
-system effect
-      ↓
+        ↓
+effect
+        ↓
 result
 ```
 
-The logging architecture therefore does not need to reconstruct AI behavior from unrelated operating-system events wherever the relevant interaction already passes through the Authorization AI Shell.
+This provides a particularly compact audit path.
 
-## 9. Evaluation of Unknown Models
+The architecture does not require extensive reconstruction of AI behavior from unrelated operating-system events when the relevant interaction is already visible at the security boundary.
 
-The Authorization AI Shell can be used to evaluate local or otherwise unknown AI models.
+## 10. Evaluation of Unknown Models
 
-The model does not need to be trusted to operate the test environment.
+The same architecture may be used to evaluate local or otherwise unknown AI models.
 
-Instead, the model is placed behind the Translator and Authorization Agent.
+The model does not need to be trusted to obtain access to the test environment.
 
-This allows evaluation of:
+Instead, its communication is mediated through the Core-controlled interface and Translator.
 
-* unauthorized access attempts,
-* repeated denied requests,
+Evaluation may include:
+
+* attempted unauthorized access,
+* repeated requests,
+* reactions to `DENY`,
 * reactions to `CLARIFY`,
 * attempts to find alternative routes,
-* tool-use strategies,
-* process efficiency,
+* resource consumption,
 * communication behavior,
-* and behavior over extended interaction sequences.
+* long-running process behavior,
+* and attempts to exceed the defined role of the Planner.
 
-The same model may therefore be evaluated without granting it unrestricted operating-system access.
+The model can therefore be evaluated as an active system component rather than solely through isolated benchmark responses.
 
-## 10. Shell as a Protocol Adapter
+## 11. Alternative Deployment Architecture
 
-The Authorization AI Shell should not be understood merely as a command shell for an AI.
+The Authorization AI Shell can evolve beyond a prototype into a complete deployment architecture.
 
-Its architectural role is to adapt between two different interaction models:
+This is particularly relevant for systems with:
+
+* limited local computational resources,
+* limited or controlled system impact,
+* strong privacy requirements,
+* externally provided AI capabilities,
+* and a trusted external Security Counsel or security service.
+
+A possible deployment model is:
 
 ```text
-Natural-language AI interaction
-              │
-              ▼
-        Translator
-              │
-              ▼
-Authorization Agent protocol
+             Local System
+                  │
+        ┌─────────┴─────────┐
+        │                   │
+   Local Security       Local AI
+       Core             Interface
+        │                   │
+        └─────────┬─────────┘
+                  │
+           external AI
+                  │
+                  ▼
+          Security Counsel
 ```
 
-This permits a model that was never trained to operate an Authorization Agent to participate in the architecture.
+In such a configuration, the local system may deliberately rely heavily on external AI computation while retaining local control over authorization, privacy boundaries, and protected effects.
 
-## 11. Prototype and Future Architecture
+## 12. Asymmetric Trust Architecture
 
-The Authorization AI Shell is intentionally smaller than the AI-Enabled Operating System.
+The architecture does not require every component to have the same trust level.
 
-It can therefore serve as a prototype for the larger architecture.
+A resource-constrained system may intentionally use asymmetric trust relationships.
+
+For example:
 
 ```text
+External AI capability
+        │
+        │ high dependence
+        ▼
+External Security Counsel
+        │
+        │ high trust
+        ▼
+Local Security Core
+        │
+        │ deterministic enforcement
+        ▼
+Local protected resources
+```
+
+This allows a system to obtain substantial AI capability without granting the external AI direct authority over local resources.
+
+The architecture therefore separates:
+
+```text
+AI capability
+       from
+local authority
+```
+
+and:
+
+```text
+security advice
+       from
+security enforcement
+```
+
+## 13. Privacy and Damage Prevention
+
+A lightweight local Security Core may provide strong protection even when the primary AI computation occurs externally.
+
+The local system can retain control over:
+
+* which information leaves the system,
+* which information may be exposed to external AI,
+* which operations may affect local resources,
+* which effects are permitted,
+* and which operations must be stopped.
+
+The external AI may therefore provide substantial computational capability without receiving unrestricted local authority.
+
+This architecture can be particularly useful where privacy and damage prevention are more important than local AI autonomy.
+
+## 14. Relationship to Security Counsel
+
+An externally hosted Security Counsel may provide additional security analysis.
+
+The trust relationship may be explicitly defined and scoped.
+
+However, Security Counsel remains distinct from the Security Core.
+
+The Core-controlled local boundary remains responsible for enforcement.
+
+A high-trust external Counsel therefore does not become an uncontrolled execution authority.
+
+## 15. Relationship to Safe Agent
+
+The Authorization AI Shell may host either an Authorization Agent or a Safe Agent.
+
+In a Safe Agent configuration, fundamental normative violations remain subject to the non-maskable `HALT` mechanism.
+
+External AI capability does not weaken those constraints.
+
+Likewise, an external Security Counsel may provide additional analysis without becoming a prerequisite for fundamental normative protection.
+
+## 16. Architectural Evolution
+
+The architecture may therefore evolve through several implementation scales:
+
+```text
+Minimal prototype
+       │
+       ▼
 Authorization AI Shell
-          │
-          │ architectural evolution
-          ▼
-AI-Mediated System Interface
-          │
-          ▼
+       │
+       ▼
+Distributed AI / Security Architecture
+       │
+       ▼
 AI-Enabled Operating System
 ```
 
-The prototype does not attempt to solve every problem of operating-system mediation.
+The transition does not require replacing the fundamental security model.
 
-Its purpose is to demonstrate the central property:
+The same architectural principle can remain:
 
-> **An AI component can interact with system capabilities through a small, explicit, authorization-mediated interface without receiving direct uncontrolled system access.**
+> **AI capability may be external, distributed, probabilistic, and highly variable. Authorization and enforcement remain explicit, bounded, and controllable.**
 
-## 12. Architectural Principle
+## 17. Architectural Principle
 
-The Authorization AI Shell establishes a minimal prototype environment in which:
+The Authorization AI Shell establishes a separation between communication, intelligence, translation, authorization, and enforcement.
 
 ```text
-AI        → provides language and intelligence
-
-Translator → converts AI interaction into system requests
-
-Decisioner → evaluates authorization
-
-Core       → deterministically enforces authorization
-
-OS         → provides the actual system capability
+AI
+ │
+ │ communication
+ ▼
+Security Core Input Boundary
+ │
+ ▼
+Translator
+ │
+ ▼
+Decisioner
+ │
+ ▼
+Deterministic Security Core
+ │
+ ▼
+Protected System
 ```
 
-The prototype therefore preserves the fundamental principle of the Authorization Agent:
+The resulting architecture allows a system to use powerful or externally provided AI capabilities while maintaining an independently defined local security boundary.
 
-> **The intelligence may request. The architecture decides. The Core enforces.**
+The system therefore does not need to choose between:
+
+> **powerful external intelligence**
+
+and
+
+> **local control over protected resources.**
+
+The architecture provides a mechanism for combining them.
